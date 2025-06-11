@@ -95,3 +95,13 @@ func (p *PromptAssessTemplateV06) RunEvaluation() {
 // 您也可以将"任务的完成质量"视作与系统无关的部分,例如输出的json,文档,图片等,又或者具体的说,是LLM输出的文本内容,
 // 而"提示词质量"则是与系统相关的部分,例如响应时间,token使用情况,模型名称...等,又或者具体的说,是无法在LLM中得到的内容
 // 当然,您怎么方便,怎么来。
+
+# 更新日记
+## v0.6.1:
+1,提供了一个简单的uuid生成器
+2,优化了PromptAssesTemplate的结构
+  具体的说:
+  2-1:移除了PromptAssessTemplate中的总分数和分数上限,通过计算方法来进行计算,而非属性
+  2-2:移除TaggetTack的概念:将维度,QA对,任务的概念合并为评估
+3, 在Evaluation中添加了一个EvaluationUnit用于表示任意的QA对,任务,维度的概念,
+4,添加了相关的方法
