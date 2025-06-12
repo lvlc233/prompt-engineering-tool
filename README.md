@@ -105,3 +105,17 @@ func (p *PromptAssessTemplateV06) RunEvaluation() {
   2-2:移除TaggetTack的概念:将维度,QA对,任务的概念合并为评估
 3, 在Evaluation中添加了一个EvaluationUnit用于表示任意的QA对,任务,维度的概念,
 4,添加了相关的方法
+
+## v0.6.2:
+1,将Assess统一为Evaluate
+2,将asses文件夹,包名,修改为evaluate
+3,添加了EvaluationTask在EvaluationTask.go中,用于确保Evaluation和Evaluator的一一对应关系,并在其中实现了Evaluator接口
+4,移除可Evaluation中的Evaluator,使其只存储数据内容,并使用map来存储unit,用于提供性能
+5,修改了EvaluationUnit中的批量创建的方法,
+6,确定了Evaluation,EvaluationUnit,MetaEvaluatePrompt的id的必要性
+7,Evaluator的函数签名修改
+8,修改PromptAssessTemplate为MetaEvaluatePrompt,使其符合含义
+9,在MetaEvaluatePrompt的数据结构中使用Map,存储不同的Evaluation
+10, 添加批量执行评估的方法,移除持久化到cvs的方法(考虑后面实现的持久化方法)
+11,更新了Test中的案例实现 
+

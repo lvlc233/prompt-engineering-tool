@@ -1,4 +1,4 @@
-package assess
+package evaluate
 
 
 
@@ -14,19 +14,22 @@ import (
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
 )
-func Test() string {
-	return generateUUID()
-}
+
 
 //看这个即可
-func TestUseV06(){
-	//定义输入的提示词
-	PromptToTest:=[]*Message{
+func Test(){
+	//1,既然是评估,那么,首先我们要有一个评估的提示词
+	PromptToEvaluation:=[]*Message{
 		UserMessage("帮我计算1+1等于几"),
 	}
+	//2,我们需要有个根据该提示词得到的输出,来进行评价参考,这里使用模拟输出好了
 	MockOutput:=[]*Message{
 		AssistantMessage("1+1=2"),
 	}
+	//之后,很自然而然的,我们需要提供评估器,用于评估,而评估需要评估的标准
+	//所以,让我们创建
+
+
 
 
 	//定义评价维度:
@@ -44,30 +47,30 @@ func TestUseV06(){
 	llm_Evaluator:=LLMEvaluator{}
 	//创建评估模板
 	//...后续考虑把部分非必要的改成方法属性添加好了awa
-	promptAssessTemplate:=NewPromptAssessTemplate(
+	promptEvaluateTemplate:=NewPromptEvaluateTemplate(
 		PromptToTest,
 		MockOutput,
 		Evaluation,
 		&llm_Evaluator);
 	//执行评估
-	promptAssessTemplate.RunEvaluation()
+	promptEvaluateTemplate.RunEvaluation()
 	//保存评估结果
-	output_json,_:=promptAssessTemplate.ToJSON()
+	output_json,_:=promptEvaluateTemplate.ToJSON()
 
 	fmt.Println(output_json)
-	// promptAssessTemplate.SaveToExcel("test.xlsx")
+	// promptEvaluateTemplate.SaveToExcel("test.xlsx")
 	//很简单吧xixi,重点让我们看下评估器的部分
 }
 //评估器及其方法
 type LLMEvaluator struct{}
-func (l *LLMEvaluator) Evaluate(p *PromptAssessTemplate)(){
+func (l *LLMEvaluator) Evaluate(p *PromptEvaluateTemplate)(){
 	//这里,我使用LLM作为评估器
 
 	//执行提示词
 	fmt.Println("==========执行提示词:获取提示词输出结果============")
 	ctx:=context.Background()
 	//...似乎有些麻烦,或许可以优化下在结构上
-	//这里就是把PromptAssessTemplateV06中的PromptToTest转换为schema.Message,提供给Eino使用。
+	//这里就是把PromptEvaluateTemplateV06中的PromptToTest转换为schema.Message,提供给Eino使用。
 	promptToTest:=p.PromptToTest
 	messages:=[]*schema.Message{}
 	for _, message := range promptToTest {
@@ -82,7 +85,7 @@ func (l *LLMEvaluator) Evaluate(p *PromptAssessTemplate)(){
 	fmt.Println("==========创建评估中....============")
 	//创建模型
 	//创建模板，使用 GoTemplate 格式 FS格式不能输入json,恼
-	//这里就是创建了一个用于进行评估的系统提示词,并接收了PromptAssessTemplateV06进行评估
+	//这里就是创建了一个用于进行评估的系统提示词,并接收了PromptEvaluateTemplateV06进行评估
 	//可以浅看下,我认为还是不错的()
 	template := prompt.FromMessages(schema.GoTemplate,
 		schema.SystemMessage(`你是一个提示词评价员,你将根据以下的内容对提示词进行评估:`),
@@ -194,18 +197,18 @@ func (l *LLMEvaluator) Evaluate(p *PromptAssessTemplate)(){
 			错误原理,输出了额外的 json is,破坏了json的格式
 			<输出格式/>
 		你将严格按照输出格式进行输出`),	
-		schema.UserMessage("{{.promptAssessV06}}"),
+		schema.UserMessage("{{.promptEvaluateV06}}"),
 	)
 
 
 	// 使用模板生成消息
-	promptAssessString,err:=p.ToJSON()
+	promptEvaluateString,err:=p.ToJSON()
 	if err!= nil  {
 		fmt.Println("提示词模板转换异常")
 		fmt.Println(err)
 	}
 	messages, err1 := template.Format(ctx, map[string]any{
-		"promptAssessV06": promptAssessString,
+		"promptEvaluateV06": promptEvaluateString,
 	})
 	
 	if err != nil {

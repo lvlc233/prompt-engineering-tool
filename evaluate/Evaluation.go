@@ -1,4 +1,4 @@
-package assess
+package evaluate
 
 import (
 	"fmt"
@@ -74,42 +74,39 @@ import (
 //总之,现在,将以一个  []*EvaluationUnit作为一个评估的基础
 
 type Evaluation struct {
-	EvaluationId		string					//评测id
-	EvaluationUnit  	[]*EvaluationUnit		//评测单元集,我们将一批单元作为一个评估整体
-	EvaluationCriteria 	string  				//评价标准,定义评分的标准
-	GetedScores         float64 				//已获取的分数
-	ScoreCap			float64 				//分数上限
-	Traceable           string  				//评分追溯
+	EvaluationId		string						//评测id
+	EvaluationUnitMap  	map[string]*EvaluationUnit	//评测单元映射,我们将一批单元作为一个评估整体
+	EvaluationCriteria 	string  					//评价标准,定义评分的标准
+	GetedScores         float64 					//已获取的分数
+	ScoreCap			float64 					//分数上限
+	Traceable           string  					//评分追溯
+
 }
 
-
+//默认创建一个使用uuid的Evaluation,要求至少有一个单元和分数上限
+func NewEvaluation(
+	evaluationUnitMap  	map[string]*EvaluationUnit,//评价单元集
+	scoreCap float64,//分数上限
+) *Evaluation {
+    // 将切片转换为Map
+    return &Evaluation{
+		EvaluationId: generateUUID(),
+        EvaluationUnitMap: evaluationUnitMap,
+		ScoreCap: scoreCap,
+    }
+}
 //带有出配置绑定的创建评估实例,配置参数有评测id,评价标准
 func NewEvaluationWithOptions(
-	evaluationUnit []*EvaluationUnit,
-	scoreCap float64,
-	opts ...EvaluationOption,
+	evaluationUnitMap map[string]*EvaluationUnit,//评价单元集
+	scoreCap float64,//分数上限
+	opts ...EvaluationOption,//配置参数
 ) *Evaluation {
-    e := NewEvaluation(evaluationUnit,scoreCap)
+    e := NewEvaluation(evaluationUnitMap,scoreCap)
     for _, opt := range opts {
         opt(e)
     }
     return e
 }
-
-//默认创建一个使用uuid的Evaluation,要求至少有一个单元和分数上限
-func NewEvaluation(
-	evaluationUnit []*EvaluationUnit,
-	scoreCap float64,
-) *Evaluation {
-    return &Evaluation{
-		EvaluationId: generateUUID(),
-        EvaluationUnit: evaluationUnit,
-		ScoreCap: scoreCap,
-    }
-}
-
-
-
 // 选项函数类型
 // id
 // 标准
@@ -134,25 +131,58 @@ func (e *Evaluation) SetId(id string) {
     e.EvaluationId = id
 }
 
-//添加评价单元集(追加)
-func (e *Evaluation) AddEvaluationUnits(unit []*EvaluationUnit) {
-    e.EvaluationUnit = append(e.EvaluationUnit, unit...)
-}
-
-//添加评价单元集(覆盖)
-func (e *Evaluation) SetEvaluationUnits(unit []*EvaluationUnit) {
-    e.EvaluationUnit = unit
-}
-
-
 //添加评价单元(追加)
 func (e *Evaluation) AddEvaluationUnit(unit *EvaluationUnit) {
-    e.EvaluationUnit = append(e.EvaluationUnit, unit)
+    if e.EvaluationUnitMap == nil {
+        e.EvaluationUnitMap = make(map[string]*EvaluationUnit)
+    }
+    if unit != nil {
+        e.EvaluationUnitMap[unit.Id] = unit
+    }
 }
 
 //添加评价单元(覆盖)
 func (e *Evaluation) SetEvaluationUnit(unit *EvaluationUnit) {
-    e.EvaluationUnit = []*EvaluationUnit{unit}
+    e.EvaluationUnitMap = make(map[string]*EvaluationUnit)
+    if unit != nil {
+        e.EvaluationUnitMap[unit.Id] = unit
+    }
+}
+
+//添加评价单元集(追加)
+func (e *Evaluation) AddEvaluationUnitMap(unitMap map[string]*EvaluationUnit) {
+    if e.EvaluationUnitMap == nil {
+        e.EvaluationUnitMap = make(map[string]*EvaluationUnit)
+    }
+    for _, unit := range unitMap {
+        if unit != nil {
+            e.EvaluationUnitMap[unit.Id] = unit
+        }
+    }
+}
+
+//添加评价单元集(覆盖)
+func (e *Evaluation) SetEvaluationUnitMap(unitMap map[string]*EvaluationUnit) {
+    e.EvaluationUnitMap = make(map[string]*EvaluationUnit)
+    for _, unit := range unitMap {
+        if unit != nil {
+            e.EvaluationUnitMap[unit.Id] = unit
+        }
+    }
+}
+
+//移除指定id的单元,在单元集中
+func (e *Evaluation) RemoveEvaluationUnitBatch(ids ...string) {
+    //批量删除
+    for _,id := range ids{
+        e.RemoveEvaluationUnitById(id)
+    }
+}
+//删除指定id的单元,在单元集合中
+func (e *Evaluation) RemoveEvaluationUnitById(id string){
+    if e.EvaluationUnitMap != nil {
+        delete(e.EvaluationUnitMap, id)
+    }
 }
 
 //添加评价标准
@@ -172,6 +202,11 @@ func (e *Evaluation) SetGetedScores(score float64) {
     if score > e.ScoreCap {
         panic(fmt.Sprintf("分数超过上限: %.2f > %.2f", score, e.ScoreCap))
     }
+    // 检查分数是否小于0
+    if score < 0 {
+        panic(fmt.Sprintf("分数不能小于0: %.2f", score))
+    }
+    e.GetedScores = score
 }
 
 //添加追溯
@@ -179,91 +214,22 @@ func (e *Evaluation) SetTraceable(traceable string) {
     e.Traceable = traceable
 }
 
-// ToString 返回Evaluation的字符串表示
-func (e *Evaluation) ToString() string {
-    return fmt.Sprintf("评测ID: %s\n评价标准: %s\n获取分数: %.2f\n分数上限: %.2f\n评分追溯: %s\n评测单元数量: %d",
-        e.EvaluationId, e.EvaluationCriteria, e.GetedScores, e.ScoreCap, e.Traceable, len(e.EvaluationUnit))
-}
 
-// ToStringWithUnits 返回包含所有评测单元详情的字符串表示
-func (e *Evaluation) ToStringWithUnits() string {
-    result := e.ToString() + "\n\n评测单元详情:\n"
-    for i, unit := range e.EvaluationUnit {
-        result += fmt.Sprintf("单元%d: %s\n", i+1, unit.ToString())
+// 获取评价单元数量
+func (e *Evaluation) GetEvaluationUnitCount() int {
+    if e.EvaluationUnitMap == nil {
+        return 0
     }
-    return result
+    return len(e.EvaluationUnitMap)
 }
 
-// ToStringNotScores 返回不包含分数信息的字符串表示
-func (e *Evaluation) ToStringNotScores() string {
-    return fmt.Sprintf("评测ID: %s\n评价标准: %s\n评分追溯: %s\n评测单元数量: %d",
-        e.EvaluationId, e.EvaluationCriteria, e.Traceable, len(e.EvaluationUnit))
-}
-
-// ToStringOnlyScores 返回仅包含分数信息的字符串表示
-func (e *Evaluation) ToStringOnlyScores() string {
-    return fmt.Sprintf("%.2f/%.2f", e.GetedScores, e.ScoreCap)
+// 清空所有评价单元
+func (e *Evaluation) ClearEvaluationUnits() {
+    e.EvaluationUnitMap = make(map[string]*EvaluationUnit)
 }
 
 
 
-
-
-
-/*
-//评测单元
-//测试完了
-*/ 
-type EvaluationUnit struct {
-	Input              	string				//输入
-	Target             	string				//目标
-}
-
-// EvaluationUnit构造函数
-func NewEvaluationUnit(input, target string) *EvaluationUnit {
-    return &EvaluationUnit{
-        Input:  input,
-        Target: target,
-    }
-}
-
-// CreateEvaluationUnits 创建多个评估单元
-// 接收任意数量的字符串参数，要求参数数量为偶数
-// 奇数位参数作为input，偶数位参数作为target
-func CreateEvaluationUnits(args ...string) ([]*EvaluationUnit, error) {
-    // 检查参数数量是否为偶数
-    if len(args)%2 != 0 {
-        return nil, fmt.Errorf("参数数量必须为偶数，当前数量: %d", len(args))
-    }
-    
-    // 创建结果切片
-    units := make([]*EvaluationUnit, 0, len(args)/2)
-    
-    // 成对处理参数
-    for i := 0; i < len(args); i += 2 {
-        input := args[i]     // 奇数位（索引0,2,4...）作为input
-        target := args[i+1]  // 偶数位（索引1,3,5...）作为target
-        
-        unit := NewEvaluationUnit(input, target)
-        units = append(units, unit)
-    }
-    
-    return units, nil
-}
-
-// CreateEvaluationUnitsMustSuccess 创建多个评估单元（不返回错误，参数错误时panic）
-// 适用于确定参数正确的场景
-func CreateEvaluationUnitsMustSuccess(args ...string) []*EvaluationUnit {
-    units, err := CreateEvaluationUnits(args...)
-    if err != nil {
-        panic(err)
-    }
-    return units
-}
-// ToString 返回EvaluationUnit的字符串表示
-func (eu *EvaluationUnit) ToString() string {
-    return fmt.Sprintf("输入: %s | 目标: %s", eu.Input, eu.Target)
-}
 
 
 

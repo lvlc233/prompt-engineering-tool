@@ -1,4 +1,4 @@
-package assess
+package evaluate
 
 import "fmt"
 
@@ -8,7 +8,7 @@ type Message struct {
 }
 
 func (m *Message) toString() string {
-	return fmt.Sprintf("角色: %s\n内容: %s", m.Role, m.Content)
+	return fmt.Sprintf("角色: %s\n内容: %s\n", m.Role, m.Content)
 }
 
 type RoleType string
