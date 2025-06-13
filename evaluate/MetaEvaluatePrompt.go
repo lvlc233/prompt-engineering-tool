@@ -1,13 +1,10 @@
 package evaluate
 
 import (
-	// "context"
-	// "encoding/csv"
+    "prompt/base"
 	"encoding/json"
 	"fmt"
-	// "os"
-	// "strconv"
-	// "github.com/xuri/excelize/v2"
+
 )
 
 // v0.6.2
@@ -25,10 +22,10 @@ type MetaEvaluatePrompt struct {
     //输入这两个字段,不一定要实际的调用,使用您收集数据集进行加载仍然是可以的
     //PromptToTest 是输入的提示词,虽然没有明确的定义,但是这里的Message的Role推荐为User和System
     //您可以使用evaluate.UserMessage()和evaluate.SystemMessage()来分别创建User和System消息
-	EvaluatePrompt []*Message    //待测提示词
+	EvaluatePrompt []*base.Message    //待测提示词
     //ActualOutput 是模型的提示词,虽然没有明确的定义,但是这里的Message的Role推荐为Assistant和Tool
     //您可以使用evaluate.AssistantMessage()和evaluate.ToolMessage()来分别创建Assistant和Tool消息
-	ActualOutput []*Message    //实际输出
+	ActualOutput []*base.Message    //实际输出
     //评估任务:绑定一个评估和评估
 	EvaluationTasks   map[string]*EvaluationTask //评价
 }
@@ -37,12 +34,12 @@ type MetaEvaluatePrompt struct {
 
 //默认创建一个使用uuid的MetaEvaluatePrompte,要求至少有输入输出和一个评价
 func NewMetaEvaluatePrompt(
-	evaluatePrompt      []*Message,
-    actualOutput        []*Message,
+	evaluatePrompt      []*base.Message,
+    actualOutput        []*base.Message,
     evaluationTasks     map[string]*EvaluationTask,
 ) *MetaEvaluatePrompt {
 	MetaEvaluatePrompt := &MetaEvaluatePrompt{
-		MetaEvaluatePromptId:   generateUUID(),
+		MetaEvaluatePromptId:   base.GenerateUUID(),
         EvaluatePrompt:         evaluatePrompt,
         ActualOutput :          actualOutput,
 		EvaluationTasks:        evaluationTasks,
@@ -52,8 +49,8 @@ func NewMetaEvaluatePrompt(
 
 //参数绑定
 func NewMetaEvaluatePromptWithOptions(
-	evaluatePrompt      []*Message,
-    actualOutput        []*Message,
+	evaluatePrompt      []*base.Message,
+    actualOutput        []*base.Message,
     evaluationTasks     map[string]*EvaluationTask,
     opts ...MetaEvaluatePromptOption,
 ) *MetaEvaluatePrompt {
@@ -93,12 +90,12 @@ func (p *MetaEvaluatePrompt) SetDescription(description string) {
 }
 
 //设置待测试提示词
-func (p *MetaEvaluatePrompt) SetPromptToTest(promptToTest []*Message) {
+func (p *MetaEvaluatePrompt) SetPromptToTest(promptToTest []*base.Message) {
     p.EvaluatePrompt = promptToTest
 }
 
 //设置实际输出
-func (p *MetaEvaluatePrompt) SetActualOutput(actualOutput []*Message) {
+func (p *MetaEvaluatePrompt) SetActualOutput(actualOutput []*base.Message) {
     p.ActualOutput = actualOutput
 }
 

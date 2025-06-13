@@ -1,6 +1,8 @@
 package evaluate
+
 import (
 	"fmt"
+	"prompt/base"
 )
 
 /*
@@ -15,7 +17,7 @@ type EvaluationUnit struct {
 // EvaluationUnit构造函数
 func NewEvaluationUnit(input, target string) *EvaluationUnit {
     return &EvaluationUnit{
-        Id:     generateUUID(),
+        Id:     base.GenerateUUID(),
         Input:  input,
         Target: target,
     }

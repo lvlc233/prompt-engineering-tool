@@ -2,7 +2,7 @@ package evaluate
 
 import (
 	"fmt"
-
+    "prompt/base"
 )
 
 //或许是个颗粒度的问题
@@ -90,7 +90,7 @@ func NewEvaluation(
 ) *Evaluation {
     // 将切片转换为Map
     return &Evaluation{
-		EvaluationId: generateUUID(),
+		EvaluationId: base.GenerateUUID(),
         EvaluationUnitMap: evaluationUnitMap,
 		ScoreCap: scoreCap,
     }

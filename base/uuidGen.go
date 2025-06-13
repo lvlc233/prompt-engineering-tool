@@ -1,4 +1,5 @@
-package evaluate
+package base
+
 
 import (
 
@@ -6,6 +7,6 @@ import (
 )
 
 // 生成UUID的辅助函数
-func generateUUID() string {
+func GenerateUUID() string {
     return uuid.New().String()
 }

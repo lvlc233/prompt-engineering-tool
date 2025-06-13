@@ -1,5 +1,10 @@
 package evaluate
 
+import (
+    "prompt/base"
+)
+
+
 // 评估任务，组合评估器和Evaluation
 type EvaluationTask struct {
     Evaluation *Evaluation
@@ -14,6 +19,6 @@ func NewEvaluationTask(Evaluation  *Evaluation, evaluator Evaluator) *Evaluation
 }
 
 // 评估任务的执行方法（调用接口实现）
-func (et *EvaluationTask) RunEvaluation(evaluatePrompt []*Message, actualOutput []*Message) {
+func (et *EvaluationTask) RunEvaluation(evaluatePrompt []*base.Message, actualOutput []*base.Message) {
 	et.Evaluator.Evaluate(et.Evaluation, evaluatePrompt, actualOutput)
 }

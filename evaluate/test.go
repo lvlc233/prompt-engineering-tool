@@ -7,22 +7,22 @@ import (
 	"log"
 
 	// "prompt/assess"
+	"prompt/base"
 	llm_base "prompt/base"
 
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
 )
 
-
 //看这个即可
 func Test(){
 	//1,既然是评估,那么,首先我们要有一个评估的提示词
-	PromptToEvaluation:=[]*Message{
-		UserMessage("帮我计算1+1等于几"),
+	PromptToEvaluation:=[]*base.Message{
+		base.UserMessage("帮我计算1+1等于几"),
 	}
 	//2,我们需要有个根据该提示词得到的输出,来进行评价参考,这里使用模拟输出好了
-	MockOutput:=[]*Message{
-		AssistantMessage("1+1=2"),
+	MockOutput:=[]*base.Message{
+		base.AssistantMessage("1+1=2"),
 	}
 	//之后,很自然而然的,我们需要提供评估器,用于评估,而评估需要评估的标准
 	//所以,让我们创建评估细节
@@ -68,7 +68,7 @@ func Test(){
 //评估器及其方法
 
 type LLMEvaluator struct{}
-func (l *LLMEvaluator) Evaluate(evaluation *Evaluation,evaluatePrompt []*Message, actualOutput []*Message)(){
+func (l *LLMEvaluator) Evaluate(evaluation *Evaluation,evaluatePrompt []*base.Message, actualOutput []*base.Message)(){
 	//这里,我们使用eino构建的LLM作为评估器
 	fmt.Println("==========创建评估中....============")
 	ctx:=context.Background()
