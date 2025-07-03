@@ -73,11 +73,9 @@ const DatasetsPage: React.FC = () => {
   };
 
   const handleViewDetail = (dataset: Dataset) => {
-    // 跳转到详情页面时，传递完整的数据集信息
+    // 传递数据集ID和来源页面信息，详情页面通过API获取数据
     navigate(`/datasets/${dataset.dataset_id}`, {
-      state: {
-        dataset: dataset
-      }
+      state: { from: '/datasets' }
     });
   };
 

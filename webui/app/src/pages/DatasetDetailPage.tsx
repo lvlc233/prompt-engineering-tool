@@ -13,7 +13,7 @@ interface DataPair {
 interface Dataset {
   dataset_id: string;
   name: string;
-  description: string;
+  description?: string;
   data_count: number;
   created_at: string;
 }
@@ -28,8 +28,7 @@ const DatasetDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 检查路由状态中是否有数据集信息
-  const datasetFromState = location.state?.dataset as Dataset | undefined;
+  // 移除对路由状态的依赖，只使用API获取数据
 
   // 获取数据集基本信息
   const fetchDatasetInfo = async () => {
@@ -79,21 +78,15 @@ const DatasetDetailPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // 如果路由状态中有数据集信息，直接使用
-      if (datasetFromState) {
-        setDataset(datasetFromState);
-        // 只需要获取详细数据
-        await fetchDatasetDetails();
-      } else {
-        // 否则获取完整数据
-        await Promise.all([fetchDatasetInfo(), fetchDatasetDetails()]);
-      }
+      // 始终从API获取完整数据
+      await Promise.all([fetchDatasetInfo(), fetchDatasetDetails()]);
       
       setLoading(false);
     };
     
     loadData();
-  }, [id, datasetFromState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (loading) {
     return (
@@ -156,23 +149,41 @@ const DatasetDetailPage: React.FC = () => {
     });
   };
 
-  const handleCancel = () => {
-    navigate('/datasets');
+  const handleGoBack = () => {
+    // 如果有来源页面信息，返回到来源页面，否则返回上一页
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else {
+      // 使用浏览器历史记录返回
+      window.history.back();
+    }
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 relative">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <h1 className="text-2xl font-semibold text-gray-800">数据集详情</h1>
-          <button
-            onClick={handleOpenHelp}
-            className="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 hover:text-blue-700 transition-colors text-sm font-bold"
-            aria-label="查看使用说明"
-            title="查看使用说明"
-          >
-            !
-          </button>
+        <div className="flex items-center justify-between mb-2">
+           <div className="flex items-center gap-2">
+             <h1 className="text-2xl font-semibold text-gray-800">数据集详情</h1>
+             <span className="text-sm text-gray-500">({dataset?.name})</span>
+             <button
+               onClick={handleOpenHelp}
+               className="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 hover:text-blue-700 transition-colors text-sm font-bold"
+               aria-label="查看使用说明"
+               title="查看使用说明"
+             >
+               !
+             </button>
+           </div>
+          <button 
+             onClick={handleGoBack}
+             className="inline-flex items-center gap-2 px-6 py-2 border-0 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+           >
+             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+             </svg>
+             返回
+           </button>
         </div>
         <p className="text-gray-600">查看数据集的详细信息和训练数据</p>
       </div>
@@ -202,7 +213,7 @@ const DatasetDetailPage: React.FC = () => {
             数据集描述
           </label>
           <div className="modern-input bg-gray-50 cursor-not-allowed min-h-20">
-            {dataset.description}
+            {dataset.description || '暂无描述'}
           </div>
         </div>
 
@@ -216,7 +227,7 @@ const DatasetDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium text-gray-800">训练数据预览</h2>
           <span className="text-sm text-gray-500">共 {dataPairs.length} 条数据</span>
@@ -254,16 +265,11 @@ const DatasetDetailPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex gap-4 mt-6">
-        <button 
-          onClick={handleCancel}
-          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          返回列表
-        </button>
+      {/* 修改数据集按钮 */}
+      <div className="flex justify-end">
         <button 
           onClick={handleEdit}
-          className="modern-button"
+          className="modern-button px-6 py-2"
         >
           修改数据集
         </button>

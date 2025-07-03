@@ -1,8 +1,7 @@
 package sql
 
 import (
-
-	// "strings"
+	"strings"
 	"time"
 	"webui-server/model"
 	"webui-server/util"
@@ -100,6 +99,53 @@ func (dc *DatasetCRUD) GetDatasetByID(datasetID string) (*Dataset, error) {
 		return nil, err
 	}
 	return &dataset, nil
+}
+
+//获取数据集根据ID列表
+func (dc *DatasetCRUD) GetDatasetByBatch(datasetID []string) ([]Dataset, error) {
+	if len(datasetID) == 0 {
+		return []Dataset{}, nil
+	}
+
+	db, err := getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	// 构建IN查询的占位符
+	placeholders := make([]string, len(datasetID))
+	args := make([]interface{}, len(datasetID))
+	for i, id := range datasetID {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	// 构建查询语句
+	query := `SELECT dataset_id, name, data_count, description, created_at FROM dataset WHERE dataset_id IN (` + 
+			strings.Join(placeholders, ",") + `) ORDER BY created_at DESC`
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var datasets []Dataset
+	for rows.Next() {
+		var dataset Dataset
+		err := rows.Scan(&dataset.DatasetMapID, &dataset.Name, &dataset.DataCount, &dataset.Description, &dataset.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		datasets = append(datasets, dataset)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return datasets, nil
 }
 
 // 删除数据集

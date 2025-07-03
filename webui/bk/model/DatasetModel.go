@@ -15,6 +15,7 @@ type EditDatasetRequest struct {
 	EditDataTuples []EditDataTuple `json:"edit_data_tuples"`
 }
 
+// 编辑数据集具体数据元组结构体
 type EditDataTuple struct {
 	ID     string `json:"id"`
 	Input  string `json:"input"`

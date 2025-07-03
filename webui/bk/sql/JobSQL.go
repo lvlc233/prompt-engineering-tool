@@ -680,41 +680,41 @@ func GetJobDetailEvaluationMappingsByJobIDAndVersion(jobID, version string) ([]J
 }
 
 // CreateJobDetailEvaluationMapping 创建任务详情评测映射
-func CreateJobDetailEvaluationMapping(req CreateJobDetailEvaluationMappingRequest) (*JobDetailEvaluationMapping, error) {
-	db, err := getDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+// func CreateJobDetailEvaluationMapping(req CreateJobDetailEvaluationMappingRequest) (*JobDetailEvaluationMapping, error) {
+// 	db, err := getDB()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer db.Close()
 
-	// 检查任务详情和评测集是否存在
-	detail, err := GetJobDetailByJobIDAndVersion(req.JobID, req.Version)
-	if err != nil {
-		return nil, err
-	}
-	if detail == nil {
-		return nil, sql.ErrNoRows
-	}
+// 	// 检查任务详情和评测集是否存在
+// 	detail, err := GetJobDetailByJobIDAndVersion(req.JobID, req.Version)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if detail == nil {
+// 		return nil, sql.ErrNoRows
+// 	}
 
-	evaluation, err := GetEvaluationMapByID(req.EvaluationMapID)
-	if err != nil {
-		return nil, err
-	}
-	if evaluation == nil {
-		return nil, sql.ErrNoRows
-	}
+// 	evaluation, err := GetEvaluationMapByID(req.EvaluationMapID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if evaluation == nil {
+// 		return nil, sql.ErrNoRows
+// 	}
 
-	query := `INSERT INTO job_detail_evaluation_mapping (job_id, version, evaluation_map_id) 
-			  VALUES (?, ?, ?)`
+// 	query := `INSERT INTO job_detail_evaluation_mapping (job_id, version, evaluation_map_id)
+// 			  VALUES (?, ?, ?)`
 
-	_, err = db.Exec(query, req.JobID, req.Version, req.EvaluationMapID)
-	if err != nil {
-		return nil, err
-	}
+// 	_, err = db.Exec(query, req.JobID, req.Version, req.EvaluationMapID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// 返回创建的映射
-	return GetJobDetailEvaluationMappingByJobIDVersionAndEvaluationID(req.JobID, req.Version, req.EvaluationMapID)
-}
+// 	// 返回创建的映射
+// 	return GetJobDetailEvaluationMappingByJobIDVersionAndEvaluationID(req.JobID, req.Version, req.EvaluationMapID)
+// }
 
 // GetJobDetailEvaluationMappingByJobIDVersionAndEvaluationID 根据任务ID、版本和评测ID获取映射
 func GetJobDetailEvaluationMappingByJobIDVersionAndEvaluationID(jobID, version, evaluationMapID string) (*JobDetailEvaluationMapping, error) {

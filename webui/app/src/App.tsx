@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import DatasetsPage from './pages/DatasetsPage';
-import CriteriaPage from './pages/CriteriaPage';
-import CriteriaDetailPage from './pages/CriteriaDetailPage';
+import EvaluationPage from './pages/EvaluationPage';
+import EvaluationDetailPage from './pages/EvaluationDetailPage';
 import TasksPage from './pages/TasksPage';
 import TaskEditorPage from './pages/TaskEditorPage';
 import DatasetEditorPage from './pages/DatasetEditorPage';
@@ -20,8 +20,8 @@ const App: React.FC = () => {
             <Route path="/datasets" element={<DatasetsPage />} />
             <Route path="/datasets/:id" element={<DatasetDetailPage />} />
             <Route path="/datasets/editor" element={<DatasetEditorPage />} />
-            <Route path="/criteria" element={<CriteriaPage />} />
-            <Route path="/criteria/:id" element={<CriteriaDetailPage />} />
+            <Route path="/evaluation" element={<EvaluationPage />} />
+            <Route path="/evaluation/:id" element={<EvaluationDetailPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tasks/editor" element={<TaskEditorPage />} />
             <Route path="/settings" element={<SettingsPage />} />

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Sidebar: React.FC = () => {
   const menuItems = [
     { name: '数据集', path: '/datasets' },
-    { name: '评测集', path: '/criteria' },
+    { name: '评测集', path: '/evaluation' },
     { name: '任务', path: '/tasks' },
     { name: '设置', path: '/settings' },
   ];

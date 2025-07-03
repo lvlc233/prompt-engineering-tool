@@ -19,7 +19,7 @@ func InitDatabase() (*sql.DB, error) {
 	}
 
 	//数据集表
-	datasetMapCreateTableSQL := `
+	datasetCreateTableSQL := `
 	CREATE TABLE IF NOT EXISTS dataset (
 		dataset_id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
@@ -29,7 +29,7 @@ func InitDatabase() (*sql.DB, error) {
 	);
 	`
 
-	if _, err := db.Exec(datasetMapCreateTableSQL); err != nil {
+	if _, err := db.Exec(datasetCreateTableSQL); err != nil {
 		return nil, err
 	}
 
@@ -49,30 +49,30 @@ func InitDatabase() (*sql.DB, error) {
 	}
 
 	//评测集表
-	evaluationMapCreateTableSQL := `
-	CREATE TABLE IF NOT EXISTS evaluation_map (
-		evaluation_map_id TEXT PRIMARY KEY,
+	evaluationsetCreateTableSQL := `
+	CREATE TABLE IF NOT EXISTS evaluationset (
+		evaluationset_id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
 		sorce_cap REAL DEFAULT 0,
-		EvaluationCriteria TEXT,
+		evaluation_criteria TEXT,
 		description TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`
 
-	if _, err := db.Exec(evaluationMapCreateTableSQL); err != nil {
+	if _, err := db.Exec(evaluationsetCreateTableSQL); err != nil {
 		return nil, err
 	}
 	//评测集数据集合映射表
-	evaluationDatasetMappingCreateTableSQL := `
-	CREATE TABLE IF NOT EXISTS evaluation_dataset_mapping (
-		evaluation_dataset_mapping_id TEXT PRIMARY KEY,
-		evaluation_map_id TEXT NOT NULL,
-		dataset_map_id TEXT NOT NULL,
+	evaluationsetDatasetMappingCreateTableSQL := `
+	CREATE TABLE IF NOT EXISTS evaluationset_dataset_mapping (
+		evaluationset_dataset_mapping_id TEXT PRIMARY KEY,
+		evaluationset_id TEXT NOT NULL,
+		dataset_id TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`
-	if _, err := db.Exec(evaluationDatasetMappingCreateTableSQL); err != nil {
+	if _, err := db.Exec(evaluationsetDatasetMappingCreateTableSQL); err != nil {
 		return nil, err
 	}
 

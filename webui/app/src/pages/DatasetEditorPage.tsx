@@ -212,7 +212,6 @@ const DatasetEditorPage: React.FC = () => {
       
       const result = await response.json();
       if (result.code === 200) {
-        alert('数据集保存成功！');
         setDeletedPairIds([]); // 清空删除列表
         navigate('/datasets');
       } else {

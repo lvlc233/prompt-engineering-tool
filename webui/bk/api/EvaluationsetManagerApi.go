@@ -6,21 +6,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var es *service.EvaluationsetService
+
 func SetEvaluationsetManagerRouter(r *gin.Engine) {
 
 	EvaluationsetManagerRouter := r.Group("/evaluationset_manager")
 	{
 		//获取所有评测集
-		EvaluationsetManagerRouter.GET("/", service.GetEvaluationsets)
+		EvaluationsetManagerRouter.GET("/", es.GetEvaluationsets)
 		//获取评测集详情
-		EvaluationsetManagerRouter.GET("/:id", service.GetEvaluationsetDetail)
+		EvaluationsetManagerRouter.GET("/:id", es.GetEvaluationsetDetail)
 		//创建评测集
-		EvaluationsetManagerRouter.POST("/add", service.CreateEvaluationset)
+		EvaluationsetManagerRouter.POST("/add", es.CreateEvaluationset)
 		//删除评测集
 		EvaluationsetManagerRouter.DELETE("/:id", service.DeleteEvaluationset)
 	
-		//编辑
-		EvaluationsetManagerRouter.POST("/editor/:id", service.EditEvaluationset)
+		//编辑	
+		//设置评价标准
+		EvaluationsetManagerRouter.POST("/set/criteria",es.SetEvaluationCriteria)
+		//设置分数上限
+		EvaluationsetManagerRouter.POST("/set/score_cap",es.SetScoreCap)
+		
+	
+		//绑定数据集合
+		EvaluationsetManagerRouter.POST("/bind_dataset", es.BindDataset)
+		//获取绑定的数据集
+		EvaluationsetManagerRouter.GET("/bind_dataset/:id", es.GetBindedDataset)
+		//解绑数据集
+		EvaluationsetManagerRouter.DELETE("/unbind_dataset/:id", es.UnbindDataset)
+		//解绑数据集批次
+		EvaluationsetManagerRouter.DELETE("/unbind_dataset_batch", es.UnbindDatasetBatch)
 	}
 }
 

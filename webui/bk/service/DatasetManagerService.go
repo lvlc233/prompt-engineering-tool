@@ -10,11 +10,14 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var dc sql.DatasetCRUD
-var ddc sql.DatasetDetailCRUD
+type DatasetService struct{}
+
+var dc *sql.DatasetCRUD
+var ddc *sql.DatasetDetailCRUD
 
 // 获取所有的数据集
-func GetDatasets(c *gin.Context) {
+func (ds *DatasetService) GetDatasets(c *gin.Context) {
+
 	datasets, err := dc.GetAllDatasets()
 	if err != nil {
 		Error(c, err)
@@ -26,7 +29,8 @@ func GetDatasets(c *gin.Context) {
 }
 
 // 创建数据集
-func CreateDataset(c *gin.Context) {
+func (ds *DatasetService) CreateDataset(c *gin.Context) {
+
 	var createDatasetRequest model.CreateDatasetRequest
 	//参数解析
 	if err := c.ShouldBindJSON(&createDatasetRequest); err != nil {
@@ -42,13 +46,13 @@ func CreateDataset(c *gin.Context) {
 }
 
 // 获取单个数据集基本信息
-func GetDatasetInfo(c *gin.Context) {
+func (ds *DatasetService) GetDatasetInfo(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		Error(c, errors.New("缺少数据集ID参数"))
 		return
 	}
-	dataset, err := ddc.GetDatasetDetailByDatasetID(id)
+	dataset, err := dc.GetDatasetByID(id)
 	if err != nil {
 		Error(c, err)
 		return
@@ -57,7 +61,7 @@ func GetDatasetInfo(c *gin.Context) {
 }
 
 // 获取数据集具体数据
-func GetDatasetDetail(c *gin.Context) {
+func (ds *DatasetService) GetDatasetDetail(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		Error(c, errors.New("缺少数据集ID参数"))
@@ -72,7 +76,7 @@ func GetDatasetDetail(c *gin.Context) {
 }
 
 // 删除数据集
-func DeleteDataset(c *gin.Context) {
+func (ds *DatasetService) DeleteDataset(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		Error(c, errors.New("缺少数据集ID参数"))
@@ -91,7 +95,7 @@ func DeleteDataset(c *gin.Context) {
 // 若id为空,表示新增
 // 若id不为空,且input/output有数据为修改
 // 若id不为空,而input/output皆无数据为删除
-func EditDataset(c *gin.Context) {
+func (ds *DatasetService) EditDataset(c *gin.Context) {
 
 	var editDatasetRequest model.EditDatasetRequest
 	//参数解析
