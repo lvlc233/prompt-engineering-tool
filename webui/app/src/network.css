@@ -1,0 +1,36 @@
+/* vis-network styles for tooltips */
+.vis-tooltip {
+  position: absolute;
+  visibility: hidden;
+  padding: 5px;
+  white-space: nowrap;
+  font-family: verdana;
+  font-size: 14px;
+  color: #000000;
+  background-color: #f5f4ed;
+  border-radius: 3px;
+  border: 1px solid #808074;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.vis-network {
+  outline: none;
+}
+
+.vis-network:focus {
+  outline: none;
+}
+
+/* Custom styles for version tree */
+.version-tree-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #fafafa;
+  padding: 10px;
+}
+
+.version-tree-container .vis-network {
+  background-color: transparent;
+}

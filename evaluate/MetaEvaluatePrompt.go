@@ -90,8 +90,8 @@ func (p *MetaEvaluatePrompt) SetDescription(description string) {
 }
 
 //设置待测试提示词
-func (p *MetaEvaluatePrompt) SetPromptToTest(promptToTest []*base.Message) {
-    p.EvaluatePrompt = promptToTest
+func (p *MetaEvaluatePrompt) SetEvaluatePrompt(evaluatePrompts []*base.Message) {
+    p.EvaluatePrompt = evaluatePrompts
 }
 
 //设置实际输出

@@ -80,7 +80,6 @@ type Evaluation struct {
 	GetedScores         float64 					//已获取的分数
 	ScoreCap			float64 					//分数上限
 	Traceable           string  					//评分追溯
-
 }
 
 //默认创建一个使用uuid的Evaluation,要求至少有一个单元和分数上限

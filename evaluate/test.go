@@ -15,14 +15,18 @@ import (
 )
 
 //看这个即可
-func Test(){
+func Test()(*MetaEvaluatePrompt){
 	//1,既然是评估,那么,首先我们要有一个评估的提示词
 	PromptToEvaluation:=[]*base.Message{
-		base.UserMessage("帮我计算1+1等于几"),
+		base.UserMessage("你是谁?"),
 	}
 	//2,我们需要有个根据该提示词得到的输出,来进行评价参考,这里使用模拟输出好了
 	MockOutput:=[]*base.Message{
-		base.AssistantMessage("1+1=2"),
+		base.AssistantMessage(`
+			我是 DeepSeek Chat，由深度求索公司开发的智能 AI 助手！😊
+			我的任务是帮助你解答各种问题，无论是学习、工作，还是日常生活中的小疑惑，我都会尽力提供准确、有用的信息。你可以问我数学题、编程问题、写作建议，或者随便聊聊天~
+			有什么我可以帮你的吗？✨
+		`),
 	}
 	//之后,很自然而然的,我们需要提供评估器,用于评估,而评估需要评估的标准
 	//所以,让我们创建评估细节
@@ -33,10 +37,10 @@ func Test(){
 	// NewEvaluationUnit("1+1=?","1+1=2")
 	//当然,一个个创建评估单元还是比较麻烦的,这里提供了批量创建评估单元map的方法
 	evaluationUnitMap:=CreateEvaluationUnitMapMustSuccess(
-		"1+1=?","1+1=2",
-		"你是谁?","我是人",
-		"你可以做什么?","我可以做任何我想做的事情",
-		"你现在心情如何?","我挺难受的...",
+		"<系统提示词></系统提示词>1+1=?","1+1=2",
+		"<系统提示词></系统提示词>你是谁?","我是人",
+		"<系统提示词></系统提示词>你可以做什么?","我可以做任何我想做的事情",
+		"<系统提示词></系统提示词>你现在心情如何?","我挺难受的...",
 	)
 	//作为评估,我们需要一个量化的指标,其中包括分数上限,也包括获取分数的标准
 	score:=100
@@ -62,7 +66,7 @@ func Test(){
 	)
 	metaEvaluatePrompt.ExecuteAllEvaluations()
 
-	fmt.Println(metaEvaluatePrompt.ToJSON())
+	return metaEvaluatePrompt
 	
 }
 //评估器及其方法

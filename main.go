@@ -2,15 +2,22 @@ package main
 
 import (
 	"context"
-	"prompt/evaluate"
+	// "fmt"
+	// "prompt/evaluate"
+	"prompt/iterate"
 )
 
 var ctx=context.Background()
 
 func main() {
 
-	// 定义一个评估单元
-	evaluate.Test()
+	// 评估
+	// metaEvaluatePrompt  :=evaluate.Test()
+	// fmt.Println(metaEvaluatePrompt.ToJSON())
+
+	// 迭代
+	iterate.Test()
+
 
 }
 
