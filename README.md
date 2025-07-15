@@ -1,21 +1,128 @@
 
-# 项目技术栈与结构说明
+# Prompt Engineering Tool
 
-## 技术栈
-- Go
-- Eino
+一个用于提示工程的全栈应用，包含 Go 后端和 React 前端。
+
+## 快速启动
+
+### 方式一：使用批处理脚本（推荐新手）
+
+#### 开发模式启动
+```bash
+# 启动开发服务器（使用 go run）
+start.bat
+```
+
+#### 生产模式启动
+```bash
+# 构建并启动生产服务器（使用编译的 exe）
+start-production.bat
+```
+
+#### 手动构建
+```bash
+# 构建前后端为可执行文件
+build.bat
+```
+
+### 方式二：使用 PowerShell 脚本（推荐开发者）
+
+```powershell
+# 查看所有可用命令
+.\scripts.ps1 help
+
+# 构建应用
+.\scripts.ps1 build
+
+# 启动开发服务器
+.\scripts.ps1 start-dev
+
+# 启动生产服务器（使用编译的 exe）
+.\scripts.ps1 start-prod
+
+# 清理构建文件
+.\scripts.ps1 clean
+
+# 运行测试
+.\scripts.ps1 test
+```
+
+## 服务地址
+
+- **前端**: http://localhost:3000
+- **后端**: http://localhost:8593
+
+## 开发 vs 生产模式
+
+### 开发模式
+- 使用 `go run` 启动后端，支持代码热重载
+- 适合开发和调试
+- 启动稍慢，但修改代码后重启快
+
+### 生产模式
+- 使用编译后的 `backend.exe` 启动
+- 启动速度快，性能更好
+- 适合部署和演示
+- 修改代码后需要重新构建
+
+## 依赖要求
+
+- **Go**: 1.19+
+- **Node.js**: 16+
+- **npm**: 8+
+
+## 项目技术栈
+- **后端**: Go + Gin + SQLite + Eino
+- **前端**: React + TypeScript + Vite
+- **构建**: Go build + npm build
+- **部署**: 可执行文件 + 静态文件
 
 ## 项目结构
 ```
-assess/                  # 评估模块
-    Evaluation/          # 评估模块
-    Message/             # 消息模块
-    PromptAssesTempalte/ # 提示词评估模板模块
-    TargetTack/          # 目标任务模块
-    test/                # 测试模块
-base/                    # 基础模块
-    model/               # 模型模块
+prompt-engineering-tool/
+├── bk/                 # Go 后端
+│   ├── main.go        # 主入口文件
+│   └── database.go    # 数据库相关
+├── web/               # React 前端
+│   ├── src/
+│   ├── package.json
+│   └── tsconfig.json
+├── bin/               # 编译后的可执行文件
+│   └── backend.exe    # 后端可执行文件
+├── assess/            # 评估模块
+│   ├── Evaluation/    # 评估模块
+│   ├── Message/       # 消息模块（已移至base）
+│   ├── PromptAssesTempalte/ # 提示词评估模板模块
+│   ├── TargetTack/    # 目标任务模块
+│   └── test/          # 测试模块
+├── base/              # 基础模块
+│   └── model/         # 模型模块
+├── build.bat          # 构建脚本
+├── start.bat          # 开发启动脚本
+├── start-production.bat # 生产启动脚本
+└── scripts.ps1        # PowerShell 管理脚本
 ```
+
+## 常见问题
+
+### 1. 编码问题
+所有脚本都已配置 UTF-8 编码，如果仍有乱码，请确保终端支持 UTF-8。
+
+### 2. 端口占用
+如果端口被占用，请检查是否有其他服务在运行：
+- 前端端口：3000
+- 后端端口：8593
+
+### 3. 构建失败
+- 确保 Go 和 Node.js 已正确安装
+- 检查网络连接（下载依赖时需要）
+- 运行 `scripts.ps1 clean` 清理后重试
+
+### 4. Go 编译为 exe 的优势
+- **启动速度快**: 编译后的可执行文件启动比 `go run` 快很多
+- **部署简单**: 单个 exe 文件，无需 Go 环境
+- **性能更好**: 编译优化后的代码执行效率更高
+- **生产就绪**: 适合生产环境部署
 
 ## 项目简介
 本项目专注于提示词工程，涵盖提示词的生成、评估、优化迭代等全流程。工程化的核心在于开发、测试与迭代的闭环。
