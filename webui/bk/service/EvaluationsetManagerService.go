@@ -10,8 +10,8 @@ import (
 
 type EvaluationsetService struct{}
 
-var ec *sql.EvaluationsetCRUD
-var edmc *sql.EvaluationsetDatasetMappingCRUD
+var ec = &sql.EvaluationsetCRUD{}
+var edmc = &sql.EvaluationsetDatasetMappingCRUD{}
 
 // 获取所有评测集
 func (es *EvaluationsetService) GetEvaluationsets(c *gin.Context) {
@@ -136,10 +136,10 @@ func (es *EvaluationsetService) GetBindedDataset(c *gin.Context){
 	// 构建包含映射ID的结果
 	result := make([]model.DatasetWithMapping, 0, len(datasets))
 	for _, dataset := range datasets {
-		mappingID := mappingMap[dataset.DatasetMapID]
+		mappingID := mappingMap[dataset.DatasetID]
 		datasetWithMapping := model.DatasetWithMapping{
 			MappingID:   mappingID,
-			DatasetID:   dataset.DatasetMapID,
+			DatasetID:   dataset.DatasetID,
 			Name:        dataset.Name,
 			DataCount:   dataset.DataCount,
 			Description: dataset.Description,
@@ -182,7 +182,7 @@ func (es *EvaluationsetService) UnbindDatasetBatch(c *gin.Context){
 }
 
 
-func DeleteEvaluationset(c *gin.Context) {
+func (es *EvaluationsetService) DeleteEvaluationset(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		Error(c, errors.New("缺少评测集ID参数"))

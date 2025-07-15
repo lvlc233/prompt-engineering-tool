@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddEvaluationModal from '../components/AddEvaluationModal';
+import { addDisplayDateToArray, getTimestampForSorting } from '../utils/timeUtils';
 
 interface Evaluation {
   evaluationset_id: string;
@@ -8,7 +9,8 @@ interface Evaluation {
   evaluation_criteria?: string;
   sorce_cap?: number;
   description?: string;
-  created_at: string;
+  created_at: string; // 完整的时间信息，用于排序
+  displayDate: string; // 格式化的日期，用于显示
 }
 
 const EvaluationPage: React.FC = () => {
@@ -42,7 +44,8 @@ const EvaluationPage: React.FC = () => {
         const response = JSON.parse(text);
         // 检查响应格式，如果有 data 字段则使用 data，否则直接使用响应
         const data = response.data || response;
-        setEvaluations(Array.isArray(data) ? data : []);
+        const evaluationsWithDisplayDate = addDisplayDateToArray<Evaluation>(Array.isArray(data) ? data : []);
+        setEvaluations(evaluationsWithDisplayDate);
       } catch (jsonError) {
         console.error('JSON解析错误:', jsonError);
         console.error('响应内容:', text);
@@ -84,7 +87,7 @@ const EvaluationPage: React.FC = () => {
       if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else {
-        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        comparison = getTimestampForSorting(a.created_at) - getTimestampForSorting(b.created_at);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -198,7 +201,7 @@ const EvaluationPage: React.FC = () => {
           <p className="text-red-500">{error}</p>
           <button 
             onClick={fetchEvaluations}
-            className="mt-3 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             重试
           </button>
@@ -220,7 +223,7 @@ const EvaluationPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">创建时间:</span>
-                <span className="text-gray-700">{new Date(evaluation.created_at).toLocaleDateString()}</span>
+                <span className="text-gray-700">{evaluation.displayDate}</span>
               </div>
             </div>
             

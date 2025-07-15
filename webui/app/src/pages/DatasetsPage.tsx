@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddDatasetModal from '../components/AddDatasetModal';
+import { addDisplayDateToArray, getTimestampForSorting } from '../utils/timeUtils';
 import HelpModal from '../components/HelpModal';
 
 interface Dataset {
@@ -8,7 +9,8 @@ interface Dataset {
   name: string;
   description?: string;
   data_count: number;
-  created_at: string;
+  created_at: string; // 完整的时间信息，用于排序
+  displayDate: string; // 格式化的日期，用于显示
 }
 
 const DatasetsPage: React.FC = () => {
@@ -33,7 +35,9 @@ const DatasetsPage: React.FC = () => {
       }
       const result = await response.json();
       if (result.code === 200) {
-        setDatasets(result.data || []);
+        // 处理后端返回的数据格式，添加displayDate字段
+        const transformedDatasets = addDisplayDateToArray<Dataset>(result.data || []);
+        setDatasets(transformedDatasets);
       } else {
         throw new Error(result.message || '获取数据集失败');
       }
@@ -154,7 +158,7 @@ const DatasetsPage: React.FC = () => {
       if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else {
-        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        comparison = getTimestampForSorting(a.created_at) - getTimestampForSorting(b.created_at);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -253,7 +257,7 @@ const DatasetsPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">创建时间:</span>
-                    <span className="text-gray-700">{new Date(dataset.created_at).toLocaleDateString()}</span>
+                    <span className="text-gray-700">{dataset.displayDate}</span>
                   </div>
                 </div>
                 

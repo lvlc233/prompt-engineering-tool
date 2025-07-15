@@ -80,6 +80,8 @@ func InitDatabase() (*sql.DB, error) {
 	CREATE TABLE IF NOT EXISTS job (
 		job_id TEXT PRIMARY KEY,
 		name TEXT NOT NULL,
+		selected_version TEXT NOT NULL,
+		description TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`
@@ -88,12 +90,12 @@ func InitDatabase() (*sql.DB, error) {
 	}
 	jobVersionCreateTableSQL := `
 	CREATE TABLE IF NOT EXISTS job_version_mapping(
-		job_id TEXT PRIMARY KEY,
-		version TEXT NOT NULL,
+		version TEXT PRIMARY KEY,
+		job_id TEXT NOT NULL,
 		father_version TEXT,
 		description TEXT,
-		is_excute BOOL,
-		excute_date DATETIME,
+		is_execute BOOL,
+		execute_date DATETIME,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`
@@ -103,13 +105,14 @@ func InitDatabase() (*sql.DB, error) {
 
 	jobDetailCreateTableSQL := `
 	CREATE TABLE IF NOT EXISTS job_detail(
-		job_id TEXT PRIMARY KEY,
+		job_id TEXT NOT NULL,
 		version TEXT NOT NULL,
 		input_prompt TEXT,
 		output_promt TEXT,
 		optimize_orientation TEXT,
 		optimized_prompt TEXT,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (job_id, version)
 	);
 	`
 	if _, err := db.Exec(jobDetailCreateTableSQL); err != nil {
@@ -117,10 +120,10 @@ func InitDatabase() (*sql.DB, error) {
 	}
 
 	jobDetailEvaluationMappingCreateTableSQL := `
-	CREATE TABLE IF NOT EXISTS job_detail_evaluation_mapping(
+	CREATE TABLE IF NOT EXISTS job_detail_evaluationset_mapping(
 		job_id TEXT PRIMARY KEY,
 		version TEXT NOT NULL,
-		evaluation_map_id TEXT NOT NULL,
+		evaluationset_id TEXT NOT NULL,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	`

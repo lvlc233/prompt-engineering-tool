@@ -22,8 +22,8 @@ const App: React.FC = () => {
             <Route path="/datasets/editor" element={<DatasetEditorPage />} />
             <Route path="/evaluation" element={<EvaluationPage />} />
             <Route path="/evaluation/:id" element={<EvaluationDetailPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/tasks/editor" element={<TaskEditorPage />} />
+            <Route path="/jobs" element={<TasksPage />} />
+            <Route path="/jobs/editor" element={<TaskEditorPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
       </Layout>

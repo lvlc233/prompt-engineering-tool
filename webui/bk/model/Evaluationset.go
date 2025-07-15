@@ -34,6 +34,6 @@ type DatasetWithMapping struct {
 	DatasetID   string `json:"dataset_id"`
 	Name        string `json:"name"`
 	DataCount   int    `json:"data_count"`
-	Description *string `json:"description,omitempty"`
+	Description string `json:"description,omitempty"`
 	CreatedAt   string `json:"created_at"`
 }

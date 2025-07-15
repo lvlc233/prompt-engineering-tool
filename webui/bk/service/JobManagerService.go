@@ -1,77 +1,89 @@
 package service
 
 import (
+	"errors"
+	"webui-server/model"
+	"webui-server/sql"
+
 	"github.com/gin-gonic/gin"
 )
 
-func GetJobs(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+type JobService struct{}
+
+var jc = &sql.JobCRUD{}
+
+// 获取所有任务
+func (js *JobService) GetJobs(c *gin.Context) {
+	jobs, err := jc.GetAllJobs()
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, jobs)
 }
 
-func GetJobDetail(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+//
+func (js *JobService) GetJobVersionsByID(c *gin.Context){
+	id := c.Param("id")
+	versions,err:=jc.GetJobVersionsByID(id)
+		if err != nil {
+		Error(c, err)
+		return
+	}
+	Success(c, versions)
+
 }
 
-func CreateJob(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+// 获取任务详情根据任务ID
+func (js *JobService) GeJobDetail(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		Error(c, errors.New("缺少任务ID参数"))
+		return
+	}
+	jobDetail, err := jc.GetJobDetail(id)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+	if jobDetail == nil {
+		Error(c, errors.New("任务不存在"))
+		return
+	}
+	Success(c, jobDetail)
 }
 
-func DeleteJob(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+// 创建新任务
+func (js *JobService) CreateJob(c *gin.Context) {
+	var req model.CreateJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, err)
+		return
+	}
+
+	err := jc.AddJob(req.Name,req.Description)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+
+	Success(c, "任务创建成功")
 }
 
-func CreateJobVersion(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+// 删除任务
+func (js *JobService) DeleteJob(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		Error(c, errors.New("缺少任务ID参数"))
+		return
+	}
+
+	err := jc.DeleteJob(id)
+	if err != nil {
+		Error(c, err)
+		return
+	}
+
+	Success(c, gin.H{"message": "任务删除成功"})
 }
 
-func SwitchJobVersion(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func GetJobVersions(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func SearchJobs(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func SortJobsByNameUp(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func SortJobsByNameDown(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func SortJobsByTimeUp(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
-
-func SortJobsByTimeDown(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}

@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddTaskModal from '../components/AddTaskModal';
+import { getTimestampForSorting } from '../utils/timeUtils';
 
 // Git风格的版本节点数据结构
 interface GitNode {
@@ -10,14 +11,17 @@ interface GitNode {
   timestamp: string;
   parentIds: string[];
   branch: string;
-  status: 'committed' | 'current' | 'draft';
+  status: 'selected' | 'executed' | 'unexecuted';
+  isExecute: boolean;
+  executeDate: string | null;
 }
 
 interface Task {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  createdAt: string;
+  createdAt: string; // 完整的时间信息，用于排序
+  displayDate: string; // 格式化的日期，用于显示
   versions: GitNode[];
   currentVersionId: string;
 }
@@ -27,10 +31,20 @@ const GitVersionTree: React.FC<{
   nodes: GitNode[]; 
   currentVersionId: string;
   onVersionSelect?: (versionId: string) => void;
-}> = ({ nodes, currentVersionId, onVersionSelect }) => {
+  taskId: string;
+  onExpandVersions?: (taskId: string) => void;
+}> = ({ nodes, currentVersionId, onVersionSelect, taskId, onExpandVersions }) => {
   const [selectedNode, setSelectedNode] = React.useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(false);
+  const [lastHoveredNode, setLastHoveredNode] = React.useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(true);
+
+  // 自动选中当前版本
+  React.useEffect(() => {
+    if (currentVersionId && !selectedNode) {
+      setSelectedNode(currentVersionId);
+    }
+  }, [currentVersionId, selectedNode]);
 
   // 计算节点布局
   const calculateLayout = () => {
@@ -47,7 +61,6 @@ const GitVersionTree: React.FC<{
     );
     
     let branchCounter = 0;
-    const nodeHeight = 60;
     const nodeSpacing = 80;
     const branchSpacing = 40;
     
@@ -72,16 +85,18 @@ const GitVersionTree: React.FC<{
   // 获取节点颜色
   const getNodeColor = (node: GitNode) => {
     if (node.id === currentVersionId) {
-      return { fill: '#3b82f6', stroke: '#1d4ed8', text: '#ffffff' }; // 蓝色 - 当前版本
+      return { fill: '#93c5fd', stroke: '#60a5fa', text: '#1f2937' }; // 浅蓝色 - 当前版本
     }
     
     switch (node.status) {
-      case 'committed':
-        return { fill: '#10b981', stroke: '#059669', text: '#ffffff' }; // 绿色 - 已提交
-      case 'draft':
-        return { fill: '#f59e0b', stroke: '#d97706', text: '#ffffff' }; // 橙色 - 草稿
+      case 'executed':
+        return { fill: '#86efac', stroke: '#4ade80', text: '#1f2937' }; // 浅绿色 - 已执行
+      case 'unexecuted':
+        return { fill: '#d1d5db', stroke: '#9ca3af', text: '#1f2937' }; // 浅灰色 - 未执行
+      case 'selected':
+        return { fill: '#93c5fd', stroke: '#60a5fa', text: '#1f2937' }; // 浅蓝色 - 选中
       default:
-        return { fill: '#6b7280', stroke: '#4b5563', text: '#ffffff' }; // 灰色 - 默认
+        return { fill: '#d1d5db', stroke: '#9ca3af', text: '#1f2937' }; // 浅灰色 - 默认
     }
   };
 
@@ -95,26 +110,55 @@ const GitVersionTree: React.FC<{
   // 处理节点点击
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(nodeId);
+    setLastHoveredNode(null); // 点击时清除悬停状态
     if (onVersionSelect) {
       onVersionSelect(nodeId);
     }
   };
 
+  // 处理鼠标进入节点
+  const handleNodeMouseEnter = (nodeId: string) => {
+    setHoveredNode(nodeId);
+    setLastHoveredNode(nodeId);
+  };
+
+  // 处理鼠标离开节点
+  const handleNodeMouseLeave = () => {
+    setHoveredNode(null);
+    // 不立即清除lastHoveredNode，保持详情面板显示
+  };
+
   // 计算SVG尺寸
-  const maxX = Math.max(...Array.from(positions.values()).map(p => p.x)) + 60;
-  const maxY = Math.max(...Array.from(positions.values()).map(p => p.y)) + 60;
+  const positionValues = Array.from(positions.values());
+  const maxX = positionValues.length > 0 ? Math.max(...positionValues.map(p => p.x)) + 60 : 100;
+  const maxY = positionValues.length > 0 ? Math.max(...positionValues.map(p => p.y)) + 60 : 100;
+
+  // 处理点击外部区域
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // 如果点击的不是节点，清除悬停状态
+    if (e.target === e.currentTarget) {
+      setLastHoveredNode(null);
+    }
+  };
 
   return (
-    <div className="git-version-tree bg-white border border-gray-200 rounded-lg">
+    <div className="git-version-tree bg-white border border-gray-200 rounded-lg" onClick={handleContainerClick}>
       {/* 版本标题区域 - 可点击展开收起 */}
       <div 
         className="flex items-center gap-2 pb-2 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => {
+          const newCollapsed = !isCollapsed;
+          setIsCollapsed(newCollapsed);
+          // 如果展开且没有版本数据，则获取版本数据
+          if (!newCollapsed && nodes.length === 0 && onExpandVersions && taskId) {
+            onExpandVersions(taskId);
+          }
+        }}
       >
         <h4 className="text-sm font-medium text-gray-900">版本</h4>
-        {selectedNode && (
+        {(selectedNode || currentVersionId) && (
           <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-            当前: {selectedNode}
+            当前: {selectedNode || currentVersionId}
           </span>
         )}
       </div>
@@ -128,7 +172,7 @@ const GitVersionTree: React.FC<{
             const nodePos = positions.get(node.id);
             if (!nodePos) return null;
             
-            return node.parentIds.map(parentId => {
+            return node.parentIds.map((parentId, index) => {
               const parentPos = positions.get(parentId);
               if (!parentPos) return null;
               
@@ -137,7 +181,7 @@ const GitVersionTree: React.FC<{
               
               return (
                 <line
-                  key={`${parentId}-${node.id}`}
+                  key={`${node.id}-${parentId}-${index}`}
                   x1={parentPos.x}
                   y1={parentPos.y}
                   x2={nodePos.x}
@@ -148,7 +192,7 @@ const GitVersionTree: React.FC<{
                 />
               );
             });
-          })}
+          }).flat()}
           
           {/* 绘制节点 */}
           {nodes.map(node => {
@@ -172,8 +216,8 @@ const GitVersionTree: React.FC<{
                   strokeWidth={isSelected ? "3" : "2"}
                   className="cursor-pointer transition-all duration-200"
                   onClick={() => handleNodeClick(node.id)}
-                  onMouseEnter={() => setHoveredNode(node.id)}
-                  onMouseLeave={() => setHoveredNode(null)}
+                  onMouseEnter={() => handleNodeMouseEnter(node.id)}
+                  onMouseLeave={handleNodeMouseLeave}
                 />
                 
                 {/* 当前版本标识 */}
@@ -193,7 +237,7 @@ const GitVersionTree: React.FC<{
                   y={pos.y - 5}
                   className="text-xs font-medium fill-gray-900 pointer-events-none"
                 >
-                  {node.id}
+                  {node.id.substring(0, 8)}
                 </text>
                 <text
                   x={pos.x + 20}
@@ -217,11 +261,11 @@ const GitVersionTree: React.FC<{
       )}
       
       {/* 节点详情 - 右侧显示 */}
-      {!isCollapsed && (hoveredNode || selectedNode) && (
+      {!isCollapsed && (hoveredNode || lastHoveredNode || selectedNode) && (
         <div className="absolute right-4 top-4 w-72 p-4 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
           {(() => {
-            // 优先显示悬停节点，否则显示选中节点
-            const displayNodeId = hoveredNode || selectedNode;
+            // 优先显示悬停节点，然后是最后悬停的节点，最后是选中节点
+            const displayNodeId = hoveredNode || lastHoveredNode || selectedNode;
             const node = nodeMap.get(displayNodeId!);
             if (!node) return null;
             
@@ -231,7 +275,7 @@ const GitVersionTree: React.FC<{
             return (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">版本号: {node.id}</span>
+                  <span className="font-semibold text-gray-900">版本号: {node.id.substring(0, 8)}</span>
                   {isHovering && (
                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                       悬停中
@@ -247,10 +291,10 @@ const GitVersionTree: React.FC<{
                   <span className="text-sm text-gray-700">描述: {node.message}</span>
                 </div>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <div>创建时间: {new Date(node.timestamp).toLocaleString('zh-CN')}</div>
-                  <div>执行时间: {node.author ? `由 ${node.author} 执行` : '未知'}</div>
-                  <div>父版本: {parentNodes.length > 0 ? parentNodes.map(p => p!.id).join(', ') : '无'}</div>
-                </div>
+                    <div>创建时间: {new Date(node.timestamp).toLocaleString('zh-CN')}</div>
+                    <div>执行时间: {node.executeDate ? new Date(node.executeDate).toLocaleString('zh-CN') : '尚未执行'}</div>
+                    <div>父版本: {parentNodes.length > 0 ? parentNodes.map(p => p!.id.substring(0, 8)).join(', ') : '无'}</div>
+                  </div>
               </div>
             );
           })()}
@@ -289,23 +333,49 @@ const GitVersionTree: React.FC<{
       
       {/* 颜色说明 */}
       {!isCollapsed && (
-        <div className="mt-2 p-2 bg-white border border-gray-200 rounded-lg">
-          <div className="flex flex-wrap gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <span>🔵</span>
-              <span className="text-gray-600">当前版本</span>
+        <div className="mt-2 p-3 bg-gray-50 border border-gray-300 rounded-lg">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" className="flex-shrink-0">
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  fill="#93c5fd"
+                  stroke="#60a5fa"
+                  strokeWidth="2"
+                  className="pointer-events-none"
+                />
+              </svg>
+              <span className="text-gray-700">选中</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span>🟢</span>
-              <span className="text-gray-600">已提交</span>
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" className="flex-shrink-0">
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  fill="#86efac"
+                  stroke="#4ade80"
+                  strokeWidth="2"
+                  className="pointer-events-none"
+                />
+              </svg>
+              <span className="text-gray-700">已执行</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span>🟡</span>
-              <span className="text-gray-600">草稿</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>⚫</span>
-              <span className="text-gray-600">默认</span>
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" className="flex-shrink-0">
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  fill="#d1d5db"
+                  stroke="#9ca3af"
+                  strokeWidth="2"
+                  className="pointer-events-none"
+                />
+              </svg>
+              <span className="text-gray-700">未执行</span>
             </div>
           </div>
         </div>
@@ -320,245 +390,98 @@ const TasksPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'time'>('time');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const [tasks, setTasks] = React.useState<Task[]>([
-    {
-      id: 1,
-      name: "智能机器人提取训练",
-      description: "使用机器学习算法对数据进行训练",
-      createdAt: "2024-01-15",
-      currentVersionId: "c4f2a1b",
-      versions: [
-        {
-          id: "a1b2c3d",
-          message: "初始项目设置和基础架构",
-          author: "张三",
-          timestamp: "2024-01-15 10:00",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "b2c3d4e",
-          message: "添加数据预处理模块",
-          author: "李四",
-          timestamp: "2024-01-16 14:30",
-          parentIds: ["a1b2c3d"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "c3d4e5f",
-          message: "实现机器学习模型训练",
-          author: "王五",
-          timestamp: "2024-01-17 09:15",
-          parentIds: ["b2c3d4e"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "d4e5f6g",
-          message: "创建实验分支用于新算法测试",
-          author: "赵六",
-          timestamp: "2024-01-17 16:45",
-          parentIds: ["b2c3d4e"],
-          branch: "feature/new-algorithm",
-          status: "draft"
-        },
-        {
-          id: "c4f2a1b",
-          message: "优化模型性能和添加评估指标",
-          author: "张三",
-          timestamp: "2024-01-18 11:20",
-          parentIds: ["c3d4e5f"],
-          branch: "main",
-          status: "current"
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: "数据分析报告",
-      description: "生成详细的数据分析报告",
-      createdAt: "2024-01-16",
-      currentVersionId: "f6g7h8i",
-      versions: [
-        {
-          id: "e5f6g7h",
-          message: "创建基础报告模板",
-          author: "李四",
-          timestamp: "2024-01-16 11:20",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "f6g7h8i",
-          message: "添加交互式图表和高级分析",
-          author: "王五",
-          timestamp: "2024-01-19 13:45",
-          parentIds: ["e5f6g7h"],
-          branch: "main",
-          status: "current"
-        },
-        {
-          id: "g7h8i9j",
-          message: "实验性数据可视化功能",
-          author: "赵六",
-          timestamp: "2024-01-20 10:30",
-          parentIds: ["e5f6g7h"],
-          branch: "feature/visualization",
-          status: "draft"
-        }
-      ]
-    },
-    {
-      id: 3,
-      name: "自然语言处理模型",
-      description: "开发先进的NLP模型用于文本理解",
-      createdAt: "2024-01-17",
-      currentVersionId: "j9k0l1m",
-      versions: [
-        {
-          id: "h8i9j0k",
-          message: "初始化NLP项目结构",
-          author: "陈七",
-          timestamp: "2024-01-17 09:00",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "i9j0k1l",
-          message: "添加词向量训练模块",
-          author: "周八",
-          timestamp: "2024-01-18 15:20",
-          parentIds: ["h8i9j0k"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "j9k0l1m",
-          message: "实现Transformer架构",
-          author: "吴九",
-          timestamp: "2024-01-19 16:30",
-          parentIds: ["i9j0k1l"],
-          branch: "main",
-          status: "current"
-        }
-      ]
-    },
-    {
-      id: 4,
-      name: "图像识别系统",
-      description: "构建高精度的图像分类和目标检测系统",
-      createdAt: "2024-01-18",
-      currentVersionId: "m1n2o3p",
-      versions: [
-        {
-          id: "k0l1m2n",
-          message: "搭建CNN基础架构",
-          author: "郑十",
-          timestamp: "2024-01-18 08:45",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "l1m2n3o",
-          message: "集成数据增强技术",
-          author: "孙十一",
-          timestamp: "2024-01-19 12:15",
-          parentIds: ["k0l1m2n"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "m1n2o3p",
-          message: "优化模型准确率",
-          author: "李十二",
-          timestamp: "2024-01-20 14:50",
-          parentIds: ["l1m2n3o"],
-          branch: "main",
-          status: "current"
-        }
-      ]
-    },
-    {
-      id: 5,
-      name: "推荐系统算法",
-      description: "开发个性化推荐算法提升用户体验",
-      createdAt: "2024-01-19",
-      currentVersionId: "p3q4r5s",
-      versions: [
-        {
-          id: "n2o3p4q",
-          message: "实现协同过滤算法",
-          author: "王十三",
-          timestamp: "2024-01-19 10:30",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "o3p4q5r",
-          message: "添加深度学习推荐模型",
-          author: "张十四",
-          timestamp: "2024-01-20 09:20",
-          parentIds: ["n2o3p4q"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "p3q4r5s",
-          message: "集成实时推荐引擎",
-          author: "李十五",
-          timestamp: "2024-01-21 11:40",
-          parentIds: ["o3p4q5r"],
-          branch: "main",
-          status: "current"
-        }
-      ]
-    },
-    {
-      id: 6,
-      name: "语音识别引擎",
-      description: "构建多语言语音识别和转换系统",
-      createdAt: "2024-01-20",
-      currentVersionId: "s5t6u7v",
-      versions: [
-        {
-          id: "q4r5s6t",
-          message: "初始化语音处理框架",
-          author: "赵十六",
-          timestamp: "2024-01-20 13:15",
-          parentIds: [],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "r5s6t7u",
-          message: "实现声学模型训练",
-          author: "钱十七",
-          timestamp: "2024-01-21 08:30",
-          parentIds: ["q4r5s6t"],
-          branch: "main",
-          status: "committed"
-        },
-        {
-          id: "s5t6u7v",
-          message: "优化识别准确率和速度",
-          author: "孙十八",
-          timestamp: "2024-01-22 15:45",
-          parentIds: ["r5s6t7u"],
-          branch: "main",
-          status: "current"
-        }
-      ]
-    }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleVersionChange = (taskId: number, versionId: string) => {
-    console.log(`切换任务 ${taskId} 到版本 ${versionId}`);
+  // 获取所有任务
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8593/job_manager/');
+      if (!response.ok) {
+        throw new Error('获取任务列表失败');
+      }
+      const data = await response.json();
+      if (data.code === 200) {
+        // 处理后端返回的数据格式
+        if (data.data && Array.isArray(data.data)) {
+          // 转换后端数据格式为前端格式
+          const transformedTasks = data.data.map((job: any) => ({
+            id: job.id || job.job_id || '', // 尝试多个可能的id字段
+            name: job.name || '',
+            description: job.description || '',
+            createdAt: job.created_at || job.createdAt || '', // 保留完整的时间信息用于排序
+            displayDate: job.created_at ? new Date(job.created_at).toISOString().split('T')[0] : '', // 用于显示的日期格式
+            currentVersionId: job.selected_version || 'main', // 使用后端返回的selected_version
+            versions: [] // 初始为空，通过fetchJobVersions获取真实数据
+          })).filter((task: Task) => task.id); // 过滤掉没有id的任务
+          setTasks(transformedTasks);
+        } else {
+          // 如果data为null或空数组，设置为空数组
+          setTasks([]);
+        }
+      } else {
+        throw new Error(data.message || '获取任务列表失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取任务列表失败');
+      console.error('获取任务列表失败:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取任务版本信息
+  const fetchJobVersions = async (jobId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8593/job_manager/versions/${jobId}`);
+      if (!response.ok) {
+        throw new Error('获取任务版本失败');
+      }
+      const data = await response.json();
+      
+      if (data.code === 200 && data.data) {
+        // 将后端数据转换为GitNode格式
+        const gitNodes: GitNode[] = data.data.map((version: any) => ({
+          id: version.version,
+          message: version.description || '无描述',
+          author: '系统',
+          timestamp: version.created_at,
+          parentIds: version.father_version ? [version.father_version] : [],
+          branch: 'main',
+          status: version.is_execute ? 'executed' : 'unexecuted',
+          isExecute: version.is_execute,
+          executeDate: version.exceute_date
+        }));
+        
+        // 更新对应任务的版本数据
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === jobId 
+              ? { ...task, versions: gitNodes }
+              : task
+          )
+        );
+      }
+    } catch (err) {
+      console.error('获取任务版本失败:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const handleVersionChange = (taskId: string, versionId: string) => {
+    // 查找当前任务
+    const currentTask = tasks.find(task => task.id === taskId);
+    
+    // 如果当前任务没有版本数据，则发送请求获取版本列表
+    if (!currentTask || !currentTask.versions || currentTask.versions.length === 0) {
+      fetchJobVersions(taskId);
+    }
+    
     // 更新任务的当前版本ID
     setTasks(prevTasks => 
       prevTasks.map(task => 
@@ -569,9 +492,26 @@ const TasksPage: React.FC = () => {
     );
   };
 
-  const handleDeleteTask = (id: number) => {
+  const handleDeleteTask = async (id: string) => {
     if (window.confirm('确定要删除这个任务吗？此操作不可撤销。')) {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+      try {
+        const response = await fetch(`http://localhost:8593/job_manager/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('删除任务失败');
+        }
+        const data = await response.json();
+        if (data.code === 200) {
+          // 删除成功，从本地状态中移除
+          setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+        } else {
+          throw new Error(data.message || '删除任务失败');
+        }
+      } catch (err) {
+        alert(err instanceof Error ? err.message : '删除任务失败');
+        console.error('删除任务失败:', err);
+      }
     }
   };
 
@@ -594,7 +534,7 @@ const TasksPage: React.FC = () => {
       if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        comparison = getTimestampForSorting(a.createdAt) - getTimestampForSorting(b.createdAt);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -603,28 +543,113 @@ const TasksPage: React.FC = () => {
    }, [tasks, searchTerm, sortBy, sortOrder]);
 
    const handleAddTask = () => {
-     setIsAddTaskModalOpen(true);
-   };
+    setIsAddTaskModalOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    navigate('/jobs/editor', {
+      state: {
+        taskName: task.name,
+        taskDescription: task.description,
+        isEditing: true,
+        taskId: task.id
+      }
+    });
+  };
+
+  const handleViewTask = (task: Task) => {
+    navigate('/jobs/editor', {
+      state: {
+        taskName: task.name,
+        taskDescription: task.description,
+        isEditing: false,
+        taskId: task.id,
+        isViewOnly: true
+      }
+    });
+  };
 
    const handleModalClose = () => {
      setIsAddTaskModalOpen(false);
    };
 
-   const handleModalConfirm = (name: string, description: string) => {
-     setIsAddTaskModalOpen(false);
-     navigate('/tasks/editor', {
-       state: {
-         taskName: name,
-         taskDescription: description
+   const handleModalConfirm = async (name: string, description: string) => {
+     try {
+       const response = await fetch('http://localhost:8593/job_manager/add', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({
+           name: name,
+           description: description
+         })
+       });
+       if (!response.ok) {
+         throw new Error('创建任务失败');
        }
-     });
+       const data = await response.json();
+       if (data.code === 200) {
+         setIsAddTaskModalOpen(false);
+         // 重新获取任务列表
+         await fetchJobs();
+         navigate('/jobs/editor', {
+           state: {
+             taskName: name,
+             taskDescription: description,
+             taskId: data.data.id
+           }
+         });
+       } else {
+         throw new Error(data.message || '创建任务失败');
+       }
+     } catch (err) {
+       alert(err instanceof Error ? err.message : '创建任务失败');
+       console.error('创建任务失败:', err);
+     }
    };
  
+   // 加载状态
+   if (loading) {
+     return (
+       <div className="p-6">
+         <div className="mb-6">
+           <h1 className="text-2xl font-semibold text-gray-800 mb-2">任务管理</h1>
+           <p className="text-gray-600">管理和监控所有AI模型训练任务</p>
+         </div>
+         <div className="text-center py-12">
+           <p className="text-gray-500">加载中...</p>
+         </div>
+       </div>
+     );
+   }
+
+   // 错误状态
+   if (error) {
+     return (
+       <div className="p-6">
+         <div className="mb-6">
+           <h1 className="text-2xl font-semibold text-gray-800 mb-2">任务管理</h1>
+           <p className="text-gray-600">管理和监控所有AI模型训练任务</p>
+         </div>
+         <div className="text-center py-12">
+           <p className="text-red-500">错误: {error}</p>
+           <button 
+             onClick={fetchJobs}
+             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+           >
+             重试
+           </button>
+         </div>
+       </div>
+     );
+   }
+
    return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-white mb-2">任务管理</h1>
-        <p className="text-white">管理和监控所有AI模型训练任务</p>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-2">任务管理</h1>
+        <p className="text-gray-600">管理和监控所有AI模型训练任务</p>
       </div>
       
       <div className="mb-6 flex flex-wrap gap-4 items-center">
@@ -670,14 +695,14 @@ const TasksPage: React.FC = () => {
         {filteredAndSortedTasks.map((task) => (
           <div key={task.id} className="modern-card p-6 flex flex-col">
             <div className="mb-3">
-              <h3 className="text-xl font-bold text-white mb-2">{task.name}</h3>
-              <p className="text-white text-base mb-3 flex-1">{task.description}</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">{task.name}</h3>
+              <p className="text-gray-600 text-sm mb-3 flex-1">{task.description}</p>
             </div>
             
             <div className="mb-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">创建时间:</span>
-                <span className="text-white">{task.createdAt}</span>
+                <span className="text-gray-500">创建时间:</span>
+                <span className="text-gray-700">{task.displayDate}</span>
               </div>
             </div>
             
@@ -686,14 +711,22 @@ const TasksPage: React.FC = () => {
                   nodes={task.versions} 
                   currentVersionId={task.currentVersionId}
                   onVersionSelect={(versionId) => handleVersionChange(task.id, versionId)}
+                  taskId={task.id}
+                  onExpandVersions={fetchJobVersions}
                 />
             </div>
             
             <div className="flex gap-2 mt-auto">
-              <button className="flex-1 px-3 py-2 text-sm border-0 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-gray-800">
+              <button 
+                onClick={() => handleViewTask(task)}
+                className="flex-1 px-3 py-2 text-sm border-0 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
+              >
                 查看详情
               </button>
-              <button className="flex-1 px-3 py-2 text-sm accent-green hover:bg-accent-light rounded transition-colors border-0">
+              <button 
+                onClick={() => handleEditTask(task)}
+                className="flex-1 px-3 py-2 text-sm accent-green hover:bg-accent-light rounded transition-colors border-0"
+              >
                 编辑
               </button>
               <button 
@@ -707,9 +740,19 @@ const TasksPage: React.FC = () => {
         ))}
       </div>
       
-      {filteredAndSortedTasks.length === 0 && (
+      {filteredAndSortedTasks.length === 0 && !loading && (
         <div className="text-center py-12">
-           <p className="text-gray-500">没有找到匹配的任务</p>
+           <p className="text-gray-500 mb-4">
+             {tasks.length === 0 ? '暂无任务，点击上方按钮创建新任务' : '没有找到匹配的任务'}
+           </p>
+           {tasks.length === 0 && (
+             <button 
+               onClick={fetchJobs}
+               className="modern-button"
+             >
+               刷新列表
+             </button>
+           )}
          </div>
        )}
        

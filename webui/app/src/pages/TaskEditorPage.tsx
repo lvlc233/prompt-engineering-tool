@@ -31,6 +31,7 @@ interface TaskEditorState {
   taskDescription?: string;
   isEditing?: boolean;
   taskId?: number;
+  isViewOnly?: boolean;
 }
 
 interface DataRow {
@@ -72,7 +73,7 @@ const TaskEditorPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const handleBack = () => {
-    navigate('/tasks');
+    navigate('/jobs');
   };
 
   const handleSave = () => {
@@ -198,14 +199,8 @@ const TaskEditorPage: React.FC = () => {
       {/* 页面头部 */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
-          >
-            ← 返回任务列表
-          </button>
           <h1 className="text-2xl font-semibold text-gray-800">
-            {state?.isEditing ? '编辑任务' : '创建新任务'}
+            {state?.isViewOnly ? '查看任务' : (state?.isEditing ? '编辑任务' : '创建新任务')}
           </h1>
         </div>
         
@@ -220,19 +215,22 @@ const TaskEditorPage: React.FC = () => {
           <div className="modern-card p-6 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">输入提示词</h3>
-              <button
-                onClick={handleRunPrompt}
-                className="modern-button text-sm"
-                disabled={!inputPrompt.trim()}
-              >
-                运行
-              </button>
+              {!state?.isViewOnly && (
+                <button
+                  onClick={handleRunPrompt}
+                  className="modern-button text-sm"
+                  disabled={!inputPrompt.trim()}
+                >
+                  运行
+                </button>
+              )}
             </div>
             <textarea
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
               className="modern-input flex-1 resize-none"
               placeholder="请输入您的提示词..."
+              readOnly={state?.isViewOnly}
             />
           </div>
 
@@ -253,12 +251,14 @@ const TaskEditorPage: React.FC = () => {
           <div className="flex-1 modern-card p-6 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">评测集</h3>
-              <button
-                onClick={() => setIsEvaluationModalOpen(true)}
-                className="px-3 py-1 text-sm border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
-              >
-                + 选择评测集
-              </button>
+              {!state?.isViewOnly && (
+                <button
+                  onClick={() => setIsEvaluationModalOpen(true)}
+                  className="px-3 py-1 text-sm border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors"
+                >
+                  + 选择评测集
+                </button>
+              )}
             </div>
             
             <div className="flex-1 overflow-auto">
@@ -292,7 +292,8 @@ const TaskEditorPage: React.FC = () => {
                                 value={set.score}
                                 onChange={(e) => handleEvaluationSetChange(set.id, 'score', Number(e.target.value))}
                                 className="w-10 px-1 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                disabled={set.evaluationMethod !== '人类评估'}
+                                disabled={set.evaluationMethod !== '人类评估' || state?.isViewOnly}
+                                readOnly={state?.isViewOnly}
                                 min="0"
                                 max={set.totalScore}
                               />
@@ -303,6 +304,7 @@ const TaskEditorPage: React.FC = () => {
                                 value={set.totalScore}
                                 onChange={(e) => handleEvaluationSetChange(set.id, 'totalScore', Number(e.target.value))}
                                 className="w-10 px-1 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                readOnly={state?.isViewOnly}
                                 min="1"
                               />
                             </td>
@@ -311,6 +313,7 @@ const TaskEditorPage: React.FC = () => {
                                value={set.evaluationMethod}
                                onChange={(e) => handleEvaluationSetChange(set.id, 'evaluationMethod', e.target.value as 'LLM评估' | '人类评估')}
                                className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               disabled={state?.isViewOnly}
                              >
                                <option value="">请选择</option>
                                <option value="LLM评估">LLM评估</option>
@@ -318,12 +321,14 @@ const TaskEditorPage: React.FC = () => {
                              </select>
                            </td>
                            <td className="px-4 py-3">
-                             <button
-                               onClick={() => handleDeleteEvaluationSet(set.id)}
-                               className="px-3 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
-                             >
-                               删除
-                             </button>
+                             {!state?.isViewOnly && (
+                               <button
+                                 onClick={() => handleDeleteEvaluationSet(set.id)}
+                                 className="px-3 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
+                               >
+                                 删除
+                               </button>
+                             )}
                            </td>
                          </tr>
                        ))}
@@ -405,11 +410,14 @@ const TaskEditorPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={6}
                   placeholder="请输入您希望优化的方向和目标..."
+                  readOnly={state?.isViewOnly}
                 />
               </div>
-              <button className="modern-button w-full">
-                运行优化
-              </button>
+              {!state?.isViewOnly && (
+                <button className="modern-button w-full">
+                  运行优化
+                </button>
+              )}
             </div>
           </div>
 
@@ -425,14 +433,16 @@ const TaskEditorPage: React.FC = () => {
                   <p className="text-gray-500 text-sm">优化完成后将显示改进的提示词...</p>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors">
-                  复制提示词
-                </button>
-                <button className="flex-1 modern-button">
-                  迭代
-                </button>
-              </div>
+              {!state?.isViewOnly && (
+                <div className="flex gap-3">
+                  <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors">
+                    复制提示词
+                  </button>
+                  <button className="flex-1 modern-button">
+                    迭代
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

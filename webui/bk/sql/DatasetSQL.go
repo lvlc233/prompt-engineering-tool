@@ -11,10 +11,10 @@ import (
 
 // Dataset 数据集结构体 - 对应 dataset_map 表
 type Dataset struct {
-	DatasetMapID string    `json:"dataset_id" db:"dataset_id"`
+	DatasetID string    `json:"dataset_id" db:"dataset_id"`
 	Name         string    `json:"name" db:"name"`
 	DataCount    int       `json:"data_count" db:"data_count"`
-	Description  *string   `json:"description,omitempty" db:"description"`
+	Description  string   `json:"description,omitempty" db:"description"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 type DatasetCRUD struct{}
@@ -23,8 +23,8 @@ type DatasetCRUD struct{}
 type DatasetDetail struct {
 	DatasetDetailID string    `json:"dataset_detail_id" db:"dataset_detail_id"`
 	DatasetID       string    `json:"dataset_id" db:"dataset_id"`
-	Input           *string   `json:"input,omitempty" db:"input"`
-	Target          *string   `json:"target,omitempty" db:"target"`
+	Input           string   `json:"input,omitempty" db:"input"`
+	Target          string   `json:"target,omitempty" db:"target"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 }
 type DatasetDetailCRUD struct{}
@@ -49,7 +49,7 @@ func (dc *DatasetCRUD) GetAllDatasets() ([]Dataset, error) {
 	var datasets []Dataset
 	for rows.Next() {
 		var dataset Dataset
-		err := rows.Scan(&dataset.DatasetMapID, &dataset.Name, &dataset.DataCount, &dataset.Description, &dataset.CreatedAt)
+		err := rows.Scan(&dataset.DatasetID, &dataset.Name, &dataset.DataCount, &dataset.Description, &dataset.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func (dc *DatasetCRUD) GetDatasetByID(datasetID string) (*Dataset, error) {
 	row := db.QueryRow(query, datasetID)
 	var dataset Dataset
 	err = row.Scan(
-		&dataset.DatasetMapID,
+		&dataset.DatasetID,
 		&dataset.Name,
 		&dataset.DataCount,
 		&dataset.Description,
@@ -134,7 +134,7 @@ func (dc *DatasetCRUD) GetDatasetByBatch(datasetID []string) ([]Dataset, error) 
 	var datasets []Dataset
 	for rows.Next() {
 		var dataset Dataset
-		err := rows.Scan(&dataset.DatasetMapID, &dataset.Name, &dataset.DataCount, &dataset.Description, &dataset.CreatedAt)
+		err := rows.Scan(&dataset.DatasetID, &dataset.Name, &dataset.DataCount, &dataset.Description, &dataset.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

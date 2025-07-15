@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddCriteriaModal from '../components/AddCriteriaModal';
+import { getTimestampForSorting } from '../utils/timeUtils';
 
 interface Criterion {
   id: number;
   name: string;
   evaluationCriteria: string;
   maxScore: number;
-  createdAt: string;
+  createdAt: string; // 完整的时间信息，用于排序
+  displayDate: string; // 格式化的日期，用于显示
 }
 
 const CriteriaPage: React.FC = () => {
@@ -23,28 +25,32 @@ const CriteriaPage: React.FC = () => {
       name: '准确性评测', 
       evaluationCriteria: '评估模型回答的准确性和事实正确性，包括信息的正确性、逻辑的合理性以及与问题的匹配度', 
       maxScore: 100,
-      createdAt: '2024-01-15'
+      createdAt: '2024-01-15T10:30:00Z',
+      displayDate: '2024-01-15'
     },
     { 
       id: 2, 
       name: '相关性评测', 
       evaluationCriteria: '评估回答与问题的相关程度，检查回答是否直接回应了用户的问题', 
       maxScore: 80,
-      createdAt: '2024-01-10'
+      createdAt: '2024-01-10T14:20:00Z',
+      displayDate: '2024-01-10'
     },
     { 
       id: 3, 
       name: '流畅性评测', 
       evaluationCriteria: '评估回答的语言流畅性和可读性，包括语法正确性、表达清晰度和语言自然度', 
       maxScore: 60,
-      createdAt: '2024-01-20'
+      createdAt: '2024-01-20T09:15:00Z',
+      displayDate: '2024-01-20'
     },
     { 
       id: 4, 
       name: '安全性评测', 
       evaluationCriteria: '评估回答的安全性和合规性，确保内容不包含有害信息或违规内容', 
       maxScore: 50,
-      createdAt: '2024-01-12'
+      createdAt: '2024-01-12T16:45:00Z',
+      displayDate: '2024-01-12'
     },
   ], []);
 
@@ -67,7 +73,7 @@ const CriteriaPage: React.FC = () => {
       if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        comparison = getTimestampForSorting(a.createdAt) - getTimestampForSorting(b.createdAt);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -158,7 +164,7 @@ const CriteriaPage: React.FC = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">创建时间:</span>
-                <span className="text-gray-700">{criterion.createdAt}</span>
+                <span className="text-gray-700">{criterion.displayDate}</span>
               </div>
             </div>
             

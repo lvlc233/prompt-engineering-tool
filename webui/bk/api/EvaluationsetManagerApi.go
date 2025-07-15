@@ -19,7 +19,7 @@ func SetEvaluationsetManagerRouter(r *gin.Engine) {
 		//创建评测集
 		EvaluationsetManagerRouter.POST("/add", es.CreateEvaluationset)
 		//删除评测集
-		EvaluationsetManagerRouter.DELETE("/:id", service.DeleteEvaluationset)
+		EvaluationsetManagerRouter.DELETE("/:id", es.DeleteEvaluationset)
 	
 		//编辑	
 		//设置评价标准
